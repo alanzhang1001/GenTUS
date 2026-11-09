@@ -1,0 +1,83 @@
+{
+  "dataset": "SANTOS_small",
+  "split_path": "configs/splits/SANTOS_small.json",
+  "ground_truth": {
+    "path": "santos_small/santos_benchmark/santos_small_benchmark_groundtruth.csv",
+    "sha256": "25760cf51fb74e86249062ce98997ea3ef9aec5727433ee2d10d0449c1cdffcc"
+  },
+  "encoder": {
+    "checkpoint": "models/encoders/santos_small_model.pt",
+    "sha256": "6f5372323eedf03d6c75ed48a0dd04b7669e2060de557aca33ca625a123ad024",
+    "config": {
+      "checkpoint_version": 2,
+      "lm": "bert-base-uncased",
+      "attn_heads": 8,
+      "mlp_dim": 256,
+      "max_tokens": 256,
+      "serialization_version": "priority_columns_with_names_v2",
+      "pooling_strategy": "global_query_attention_v2"
+    }
+  },
+  "training": {
+    "epochs": 80,
+    "batch_size": 32,
+    "grad_accum": 2,
+    "dataloader_workers": 8,
+    "lr": 0.0005,
+    "num_quantizers": 4,
+    "codebook_size": 256,
+    "rqvae_epochs": 300,
+    "rqvae_lr": 0.001,
+    "rqvae_batch_size": 256,
+    "rqvae_commitment_weight": 0.05,
+    "rqvae_kmeans_iters": 100,
+    "n_aug": 7,
+    "max_cols": 12,
+    "max_rows": 12,
+    "task_aware_latent_dim": 128,
+    "task_aware_hidden_dims": "512,256",
+    "task_aware_union_loss_weight": 0.1,
+    "task_aware_temperature": 0.1,
+    "task_aware_dropout": 0.0,
+    "add_candidate_candidate_pairs": false,
+    "mask_false_negatives": false,
+    "fn_jaccard_threshold": 0.0,
+    "include_indexing_records": true,
+    "use_ranking_loss": true,
+    "ranking_weight": 0.2,
+    "ranking_margin": 0.2,
+    "max_negatives_per_query": 5,
+    "model": "t5-base",
+    "embed_model": "bert-base-uncased",
+    "seed": 42,
+    "include_column_names": true,
+    "serialization_policy": "priority"
+  },
+  "evaluation": {
+    "k": 10,
+    "beam_size": 60,
+    "num_beam_groups": 6,
+    "diversity_penalty": 1.0,
+    "max_cols": 12,
+    "max_rows": 12,
+    "include_column_names": true,
+    "serialization_policy": "priority",
+    "restrict_gt_to_sid": false
+  },
+  "sources": {
+    "training": {
+      "path": "scripts/run_p0_main_table.py",
+      "sha256": "2285137a8b6ea46529eb86666ba5d578b736fa29cba8ca0a3878874bf07a2d07"
+    },
+    "evaluation": {
+      "path": "historical_aggregates.json",
+      "key": "GenTUS.SANTOS_small",
+      "sha256": "342ad6feb6b522103c60aba31843a747bebd1b19d44a64de56448479c249b7d9",
+      "metrics": {
+        "k": 10,
+        "P": 0.99,
+        "R": 0.8048
+      }
+    }
+  }
+}

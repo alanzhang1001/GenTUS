@@ -1,0 +1,88 @@
+{
+  "dataset": "wiki_union",
+  "split_path": "configs/splits/wiki_union.json",
+  "ground_truth": {
+    "path": "wiki_union/benchmark.pkl",
+    "sha256": "7e30a458b48e2246a43773fece64503f8748773b52ef38895dc850e23c196497"
+  },
+  "encoder": {
+    "checkpoint": "models/encoders/wiki_union_model.pt",
+    "sha256": "bb7888e6750d923ea19d6828ce1e90b673af823f5efd52f80ff1fe500c167c6a",
+    "config": {
+      "checkpoint_version": 2,
+      "lm": "bert-base-uncased",
+      "attn_heads": 8,
+      "mlp_dim": 256,
+      "max_tokens": 256,
+      "serialization_version": "priority_columns_with_names_v2",
+      "pooling_strategy": "global_query_attention_v2",
+      "benchmark_k": 40,
+      "exclude_query_from_index": false,
+      "mu_a_variant": "paper_eq8_value_only",
+      "benchmark_protocol": "paper_q100_gt40_seed42_v1"
+    }
+  },
+  "training": {
+    "epochs": 30,
+    "batch_size": 32,
+    "grad_accum": 2,
+    "dataloader_workers": 8,
+    "lr": 0.0005,
+    "num_quantizers": 6,
+    "codebook_size": 512,
+    "rqvae_epochs": 300,
+    "rqvae_lr": 0.001,
+    "rqvae_batch_size": 256,
+    "rqvae_commitment_weight": 0.05,
+    "rqvae_kmeans_iters": 100,
+    "n_aug": 1,
+    "max_cols": 12,
+    "max_rows": 12,
+    "task_aware_latent_dim": 128,
+    "task_aware_hidden_dims": "512,256",
+    "task_aware_union_loss_weight": 0.1,
+    "task_aware_temperature": 0.1,
+    "task_aware_dropout": 0.0,
+    "add_candidate_candidate_pairs": true,
+    "mask_false_negatives": true,
+    "fn_jaccard_threshold": 0.0,
+    "include_indexing_records": true,
+    "use_ranking_loss": true,
+    "ranking_weight": 0.2,
+    "ranking_margin": 0.2,
+    "max_negatives_per_query": 15,
+    "model": "t5-base",
+    "embed_model": "bert-base-uncased",
+    "seed": 42,
+    "include_column_names": true,
+    "serialization_policy": "priority"
+  },
+  "evaluation": {
+    "k": 40,
+    "beam_size": 120,
+    "num_beam_groups": 6,
+    "diversity_penalty": 0.8,
+    "max_cols": 12,
+    "max_rows": 12,
+    "include_column_names": true,
+    "serialization_policy": "priority",
+    "restrict_gt_to_sid": false
+  },
+  "sources": {
+    "training": {
+      "path": "results/querysplit/wiki_union/train_summary.json",
+      "sha256": "43a2a8e2d2c54d77e3fd1b8f2bbe423bc388abbf1c99ddce009bd444892c2a20"
+    },
+    "evaluation": {
+      "path": "results/querysplit/wiki_union/eval_summary.random.json",
+      "sha256": "de099a43bdc342b874186aba4cdf764931c0ff741aa9634e45df410edc17240f",
+      "metrics": {
+        "MAP@k": 0.7043,
+        "Precision@k": 0.7725,
+        "Recall@k": 0.6382,
+        "k": 40,
+        "evaluated_queries": 20
+      }
+    }
+  }
+}

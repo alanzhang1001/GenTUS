@@ -1,0 +1,88 @@
+{
+  "dataset": "LakeBench_opendata_1k",
+  "split_path": "configs/splits/LakeBench_opendata_1k.json",
+  "ground_truth": {
+    "path": "LakeBench_opendata_1k/benchmark.pkl",
+    "sha256": "ef8b1527cb2bb25ee0b6b192f1e439c7803a5192753a0e8599c2e66070b1146a"
+  },
+  "encoder": {
+    "checkpoint": "models/encoders/LakeBench_opendata_1k_model.pt",
+    "sha256": "514168f3bad28b104cb2e098e1881bf49c510be0932807fa56dd02d7d105da35",
+    "config": {
+      "checkpoint_version": 2,
+      "lm": "bert-base-uncased",
+      "attn_heads": 8,
+      "mlp_dim": 256,
+      "max_tokens": 256,
+      "serialization_version": "priority_columns_with_names_v2",
+      "pooling_strategy": "global_query_attention_v2",
+      "benchmark_k": 60,
+      "exclude_query_from_index": true,
+      "mu_a_variant": "default",
+      "benchmark_protocol": "lakebench_union_e1_extension_seed42_v1"
+    }
+  },
+  "training": {
+    "epochs": 30,
+    "batch_size": 32,
+    "grad_accum": 2,
+    "dataloader_workers": 8,
+    "lr": 0.0005,
+    "num_quantizers": 6,
+    "codebook_size": 512,
+    "rqvae_epochs": 300,
+    "rqvae_lr": 0.001,
+    "rqvae_batch_size": 256,
+    "rqvae_commitment_weight": 0.05,
+    "rqvae_kmeans_iters": 100,
+    "n_aug": 2,
+    "max_cols": 16,
+    "max_rows": 24,
+    "task_aware_latent_dim": 128,
+    "task_aware_hidden_dims": "512,256",
+    "task_aware_union_loss_weight": 0.1,
+    "task_aware_temperature": 0.1,
+    "task_aware_dropout": 0.0,
+    "add_candidate_candidate_pairs": true,
+    "mask_false_negatives": true,
+    "fn_jaccard_threshold": 0.0,
+    "include_indexing_records": true,
+    "use_ranking_loss": true,
+    "ranking_weight": 0.2,
+    "ranking_margin": 0.2,
+    "max_negatives_per_query": 15,
+    "model": "t5-base",
+    "embed_model": "bert-base-uncased",
+    "seed": 42,
+    "include_column_names": true,
+    "serialization_policy": "priority"
+  },
+  "evaluation": {
+    "k": 60,
+    "beam_size": 160,
+    "num_beam_groups": 8,
+    "diversity_penalty": 0.8,
+    "max_cols": 16,
+    "max_rows": 24,
+    "include_column_names": true,
+    "serialization_policy": "priority",
+    "restrict_gt_to_sid": true
+  },
+  "sources": {
+    "training": {
+      "path": "results/querysplit/LakeBench_opendata_1k/train_summary.random.json",
+      "sha256": "a4567bf28866a4cbc8f2a32ebd4c3185d88940a46dbf737e2c4b9cfd819ddafc"
+    },
+    "evaluation": {
+      "path": "results/querysplit/LakeBench_opendata_1k/eval_summary.random.json",
+      "sha256": "026da09ebe4164e6012d8c910b59b1375d372db8388d5cac89a94a6688e0622e",
+      "metrics": {
+        "MAP@k": 0.6018,
+        "Precision@k": 0.2381,
+        "Recall@k": 0.7656,
+        "k": 60,
+        "evaluated_queries": 617
+      }
+    }
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "dataset": "SANTOS_large",
+  "split_path": "configs/splits/SANTOS_large.json",
+  "ground_truth": {
+    "path": "santos_large/real_data_lake_benchmark/real_data_lake_benchmark_groundtruth.csv",
+    "sha256": "a9e093eae2218af257c59f88dea9a49779574d5c3bba51056fd6b3c7192008da"
+  },
+  "encoder": {
+    "checkpoint": "models/encoders/santos_large_model.pt",
+    "sha256": "98695e4230afbc1de60d23a6cde90e4e475a285524296b0d706c2f97f6d50e85",
+    "config": {
+      "checkpoint_version": 2,
+      "lm": "bert-base-uncased",
+      "attn_heads": 8,
+      "mlp_dim": 256,
+      "max_tokens": 256,
+      "serialization_version": "priority_columns_with_names_v2",
+      "pooling_strategy": "global_query_attention_v2"
+    }
+  },
+  "training": {
+    "epochs": 80,
+    "batch_size": 32,
+    "grad_accum": 2,
+    "dataloader_workers": 8,
+    "lr": 0.0005,
+    "num_quantizers": 8,
+    "codebook_size": 1024,
+    "rqvae_epochs": 300,
+    "rqvae_lr": 0.001,
+    "rqvae_batch_size": 256,
+    "rqvae_commitment_weight": 0.05,
+    "rqvae_kmeans_iters": 100,
+    "n_aug": 5,
+    "max_cols": 12,
+    "max_rows": 12,
+    "task_aware_latent_dim": 128,
+    "task_aware_hidden_dims": "512,256",
+    "task_aware_union_loss_weight": 0.1,
+    "task_aware_temperature": 0.2,
+    "task_aware_dropout": 0.0,
+    "add_candidate_candidate_pairs": true,
+    "mask_false_negatives": true,
+    "fn_jaccard_threshold": 0.0,
+    "include_indexing_records": true,
+    "use_ranking_loss": true,
+    "ranking_weight": 0.2,
+    "ranking_margin": 0.2,
+    "max_negatives_per_query": 15,
+    "model": "t5-base",
+    "embed_model": "bert-base-uncased",
+    "seed": 42,
+    "include_column_names": true,
+    "serialization_policy": "priority"
+  },
+  "evaluation": {
+    "k": 20,
+    "beam_size": 120,
+    "num_beam_groups": 6,
+    "diversity_penalty": 1.0,
+    "max_cols": 12,
+    "max_rows": 12,
+    "include_column_names": true,
+    "serialization_policy": "priority",
+    "restrict_gt_to_sid": false
+  },
+  "sources": {
+    "training": {
+      "path": "results/querysplit/SANTOS_large_gt_support7/train_summary.random.json",
+      "sha256": "e9356562cd1765a1b3b6def80bebe82faacb126f1a4c49ada8ecfedf67d82d48"
+    },
+    "evaluation": {
+      "path": "results/querysplit/SANTOS_large_gt_support7/eval_summary.random.json",
+      "sha256": "ea46521a2947e5e5efb4a2183bc86d6cdd2edf2b8f9d3aa04ee92d34cd3897d3",
+      "metrics": {
+        "MAP@k": 0.5324,
+        "Precision@k": 0.5581,
+        "Recall@k": 0.6659,
+        "k": 20,
+        "evaluated_queries": 7
+      }
+    }
+  }
+}

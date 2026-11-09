@@ -1,37 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DATASET="${DATASET:-TUS_small}"
-MODEL="${MODEL:-t5-base}"
-EMBED_MODEL="${EMBED_MODEL:-sentence-transformers/all-mpnet-base-v2}"
-OUTPUT_DIR="${OUTPUT_DIR:-results/${DATASET}/seed42}"
-TRAIN_RATIO="${TRAIN_RATIO:-0.8}"
-SEED="${SEED:-42}"
-K="${K:-60}"
-
-COMMON_ARGS=()
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ARGS=(--dataset "${DATASET:-TUS_small}")
+if [[ -n "${OUTPUT_DIR:-}" ]]; then
+  ARGS+=(--output-dir "$OUTPUT_DIR")
+fi
+if [[ -n "${ENCODER_CHECKPOINT:-}" ]]; then
+  ARGS+=(--encoder-checkpoint "$ENCODER_CHECKPOINT")
+fi
+if [[ -n "${MODEL:-}" ]]; then
+  ARGS+=(--model "$MODEL")
+fi
+if [[ -n "${EMBED_MODEL:-}" ]]; then
+  ARGS+=(--embed-model "$EMBED_MODEL")
+fi
 if [[ -n "${MODEL_CACHE_DIR:-}" ]]; then
-  COMMON_ARGS+=(--model_cache_dir "$MODEL_CACHE_DIR")
+  ARGS+=(--model-cache-dir "$MODEL_CACHE_DIR")
 fi
 if [[ "${LOCAL_FILES_ONLY:-0}" == "1" ]]; then
-  COMMON_ARGS+=(--local_files_only)
+  ARGS+=(--local-files-only)
 fi
-
-python src/train.py \
-  --dataset "$DATASET" \
-  --model "$MODEL" \
-  --embed_model "$EMBED_MODEL" \
-  --output_dir "$OUTPUT_DIR" \
-  --train_ratio "$TRAIN_RATIO" \
-  --seed "$SEED" \
-  "${COMMON_ARGS[@]}"
-
-python src/evaluate.py \
-  --dataset "$DATASET" \
-  --model_dir "$OUTPUT_DIR" \
-  --sid_path "$OUTPUT_DIR/semantic_ids.json" \
-  --split_path "$OUTPUT_DIR/split.json" \
-  --k "$K" \
-  --output "$OUTPUT_DIR/eval_summary.json" \
-  --per_query_output "$OUTPUT_DIR/per_query_metrics.jsonl" \
-  "${COMMON_ARGS[@]}"
+exec python "$SCRIPT_DIR/run_gentus.py" "${ARGS[@]}" "$@"

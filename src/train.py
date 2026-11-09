@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 import json
 import os
 import random
@@ -22,6 +23,7 @@ from protocol import (
     clean_ground_truth,
     filter_ground_truth_by_queries,
     make_query_split,
+    read_split,
     write_split,
 )
 from semantic_id.embedder import embed
@@ -101,10 +103,12 @@ def train_protocol_metadata(args, table_names: list[str], split, train_ground_tr
         "seed": args.seed,
         "rqvae_mode": args.rqvae_mode,
         "embed_model": args.embed_model,
+        "encoder_sha256": args.encoder_sha256,
         "max_cols": args.max_cols,
         "max_rows": args.max_rows,
         "serializer_token_budget": args.serializer_token_budget,
         "include_column_names": args.include_column_names,
+        "serialization_policy": args.serialization_policy,
         "num_quantizers": args.num_quantizers,
         "codebook_size": args.codebook_size,
         "rqvae_epochs": args.rqvae_epochs,
@@ -283,6 +287,7 @@ def build_records(
     include_indexing_records=True,
     include_column_names=False,
     indexing_table_names=None,
+    serialization_policy="column_budget",
 ):
     records = []
     negative_lookup = {}
@@ -323,6 +328,7 @@ def build_records(
                     max_rows=max_rows,
                     include_column_names=include_column_names,
                     token_budget=serializer_token_budget,
+                    policy=serialization_policy,
                 )
             )
         query_positive_pairs = 0
@@ -381,6 +387,7 @@ def build_records(
                         max_rows=max_rows,
                         include_column_names=include_column_names,
                         token_budget=serializer_token_budget,
+                        policy=serialization_policy,
                     ),
                     "target_text": target_text,
                 })
@@ -394,7 +401,10 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Train GenTUS with a split-safe query protocol.")
     parser.add_argument("--dataset", default="TUS_small")
     parser.add_argument("--model", default="t5-base")
-    parser.add_argument("--embed_model", default="sentence-transformers/all-mpnet-base-v2")
+    parser.add_argument("--embed_model", default="bert-base-uncased")
+    parser.add_argument("--encoder_checkpoint", "--tactus_checkpoint", required=True)
+    parser.add_argument("--split_path", default=None)
+    parser.add_argument("--serialization_policy", choices=["column_budget", "priority"], default="column_budget")
     parser.add_argument("--output_dir", default="results/checkpoints/tus_small")
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--batch_size", type=int, default=32)
@@ -444,6 +454,8 @@ def parse_args():
 
 def main():
     args = parse_args()
+    with open(args.encoder_checkpoint, "rb") as checkpoint_file:
+        args.encoder_sha256 = hashlib.file_digest(checkpoint_file, "sha256").hexdigest()
     set_seed(args.seed)
     started_at = datetime.now().isoformat()
     stage_timings: dict[str, float] = {}
@@ -458,7 +470,9 @@ def main():
     raw_ground_truth = load_ground_truth(args.dataset)
     candidate_names = set(tables)
     cleaned_ground_truth = clean_ground_truth(raw_ground_truth, candidate_names, set(query_tables_all))
-    split = make_query_split(sorted(cleaned_ground_truth), train_ratio=args.train_ratio, seed=args.seed)
+    split = (read_split(args.split_path) if args.split_path else
+             make_query_split(sorted(cleaned_ground_truth), train_ratio=args.train_ratio, seed=args.seed))
+    args.train_ratio = split.train_ratio
     train_query_names = set(split.train_queries)
     test_query_names = set(split.test_queries)
     train_ground_truth = filter_ground_truth_by_queries(cleaned_ground_truth, train_query_names)
@@ -504,32 +518,35 @@ def main():
         embed_cache = sid_path.replace(".json", "_embeddings.npy")
         names_cache = sid_path.replace(".json", "_names.json")
         embeddings = None
-        if os.path.exists(embed_cache) and os.path.exists(names_cache):
+        embedding_metadata = embed_cache + ".metadata.json"
+        embedding_config = {"encoder_sha256": args.encoder_sha256,
+                            "embed_model": args.embed_model,
+                            "include_column_names": args.include_column_names}
+        if os.path.exists(embed_cache) and os.path.exists(names_cache) and os.path.exists(embedding_metadata):
             with open(names_cache, encoding="utf-8") as f:
                 cached_names = json.load(f)
-            if names_match(names, cached_names):
+            with open(embedding_metadata, encoding="utf-8") as f:
+                cached_embedding_config = json.load(f)
+            if names_match(names, cached_names) and cached_embedding_config == embedding_config:
                 embeddings = np.load(embed_cache)
                 cache_flags["embedding_cache_hit"] = True
             else:
-                print("  cached embeddings ignored: datalake table order changed")
+                print("  cached embeddings ignored: table order or encoder configuration changed")
         if embeddings is None:
-            texts = [
-                serialize(tables[n], max_cols=args.max_cols, max_rows=args.max_rows,
-                          include_column_names=args.include_column_names,
-                          token_budget=args.serializer_token_budget)
-                for n in names
-            ]
             embeddings = embed(
-                texts,
                 model_name=args.embed_model,
                 cache_dir=args.model_cache_dir,
                 local_files_only=args.local_files_only,
+                tables=tables,
+                encoder_checkpoint=args.encoder_checkpoint,
+                include_column_names=args.include_column_names,
             )
             ensure_parent_dir(embed_cache)
             np.save(embed_cache, embeddings)
             ensure_parent_dir(names_cache)
             with open(names_cache, "w", encoding="utf-8") as f:
                 json.dump(names, f)
+            write_json(embedding_metadata, embedding_config)
 
         positive_pairs = build_unionable_pairs(
             names,
@@ -601,6 +618,7 @@ def main():
         include_indexing_records=args.include_indexing_records,
         include_column_names=args.include_column_names,
         indexing_table_names=indexing_table_names,
+        serialization_policy=args.serialization_policy,
     )
     if not records:
         raise RuntimeError("No training records were generated")

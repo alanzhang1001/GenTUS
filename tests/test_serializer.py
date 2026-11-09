@@ -43,3 +43,16 @@ def test_serialize_honors_explicit_token_budget() -> None:
     text = serialize(df, token_budget=5)
 
     assert len(text.split()) <= 5
+
+
+def test_serialize_keeps_values_with_their_column() -> None:
+    df = pd.DataFrame({"a": ["a1", "a2"], "b": ["b1", "b2"]})
+    assert serialize(df) == "[COL] [VAL] a1 | a2 [COL] [VAL] b1 | b2"
+    assert serialize(df, include_column_names=True) == (
+        "[COL] a [VAL] a1 | a2 [COL] b [VAL] b1 | b2"
+    )
+
+
+def test_serialize_budget_preserves_column_boundaries() -> None:
+    df = pd.DataFrame({"a": ["a1", "a2"], "b": ["b1", "b2"]})
+    assert serialize(df, token_budget=6) == "[COL] [VAL] a1 [COL] [VAL] b1"

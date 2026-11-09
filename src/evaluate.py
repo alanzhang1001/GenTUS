@@ -60,7 +60,8 @@ def _average_precision(ranked: list[str], gt_set: set[str], k: int) -> tuple[flo
             precision_sum += precision_at_rank
             if first_gt_rank is None:
                 first_gt_rank = rank
-    ap = precision_sum / len(gt_set) if gt_set else 0.0
+    denominator = min(k, len(gt_set))
+    ap = precision_sum / denominator if denominator > 0 else 0.0
     return ap, hits, precision_sum, first_gt_rank
 
 
@@ -97,6 +98,7 @@ def compute_metrics(
     save_ranked_results=False,
     decoding_mode="constrained",
     include_column_names=False,
+    serialization_policy="column_budget",
 ):
     aps = []
     precisions = []
@@ -158,6 +160,7 @@ def compute_metrics(
             max_rows=max_rows,
             serializer_token_budget=serializer_token_budget,
             include_column_names=include_column_names,
+            serialization_policy=serialization_policy,
             decoding_mode=decoding_mode,
             return_generation_stats=True,
         )
@@ -244,9 +247,11 @@ def parse_args():
                         help="Maximum columns to serialize; 0 uses all columns.")
     parser.add_argument("--max_rows", type=int, default=24)
     parser.add_argument("--serializer_token_budget", type=int, default=256)
+    parser.add_argument("--serialization_policy", choices=["column_budget", "priority"], default="column_budget")
     parser.add_argument("--include-column-names", dest="include_column_names",
                         action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--include_self", action="store_true")
+    parser.add_argument("--restrict_gt_to_sid", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--output", default=None)
     parser.add_argument("--per_query_output", default=None)
     parser.add_argument("--ranked_results_output", default=None)
@@ -272,7 +277,8 @@ def main():
     datalake_tables = load_data_lake(args.dataset)
     query_tables_all = load_query_tables(args.dataset)
     raw_ground_truth = load_ground_truth(args.dataset)
-    cleaned_ground_truth = clean_ground_truth(raw_ground_truth, set(datalake_tables), set(query_tables_all))
+    candidates = set(sid_manager.table2id) if args.restrict_gt_to_sid else None
+    cleaned_ground_truth = clean_ground_truth(raw_ground_truth, candidates, set(query_tables_all))
     test_ground_truth = filter_ground_truth_by_queries(cleaned_ground_truth, set(split.test_queries))
     test_query_tables = {name: query_tables_all[name] for name in split.test_queries if name in query_tables_all}
     if not test_query_tables:
@@ -301,6 +307,7 @@ def main():
         save_ranked_results=bool(args.ranked_results_output),
         decoding_mode=args.decoding_mode,
         include_column_names=args.include_column_names,
+        serialization_policy=args.serialization_policy,
     )
 
     result = {
@@ -335,6 +342,8 @@ def main():
         "max_rows": args.max_rows,
         "serializer_token_budget": args.serializer_token_budget,
         "include_column_names": args.include_column_names,
+        "serialization_policy": args.serialization_policy,
+        "restrict_gt_to_sid": args.restrict_gt_to_sid,
         **eval_stats,
         "timestamp": datetime.now().isoformat(),
     }

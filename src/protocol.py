@@ -25,16 +25,10 @@ class QuerySplit:
 
 def clean_ground_truth(
     ground_truth: dict[str, list[str]],
-    candidate_names: set[str],
+    candidate_names: set[str] | None,
     query_names: set[str] | None = None,
 ) -> dict[str, list[str]]:
-    """Remove invalid positives before any train/eval filtering.
-
-    Public GenTUS evaluates against a candidate pool defined by the datalake
-    directory. Ground-truth positives that are not present in that pool are
-    dataset inconsistencies, so they are fixed once here rather than masked at
-    evaluation time.
-    """
+    """Remove self matches and duplicates; optionally restrict to a candidate pool."""
     cleaned: dict[str, list[str]] = {}
     for query_name, candidates in ground_truth.items():
         if query_names is not None and query_name not in query_names:
@@ -42,7 +36,9 @@ def clean_ground_truth(
         valid = []
         seen = set()
         for candidate in candidates:
-            if candidate == query_name or candidate not in candidate_names or candidate in seen:
+            if candidate == query_name or candidate in seen:
+                continue
+            if candidate_names is not None and candidate not in candidate_names:
                 continue
             valid.append(candidate)
             seen.add(candidate)
@@ -85,9 +81,15 @@ def write_split(path: str | Path, split: QuerySplit) -> None:
 
 def read_split(path: str | Path) -> QuerySplit:
     data = json.loads(Path(path).read_text(encoding="utf-8"))
-    return QuerySplit(
+    split = QuerySplit(
         train_queries=[str(name) for name in data["train_queries"]],
         test_queries=[str(name) for name in data["test_queries"]],
         train_ratio=float(data["train_ratio"]),
         seed=int(data["seed"]),
     )
+    for names in (split.train_queries, split.test_queries):
+        if not names or len(set(names)) != len(names):
+            raise ValueError("Saved query splits must be nonempty and contain unique names")
+    if set(split.train_queries) & set(split.test_queries):
+        raise ValueError("Saved training and test queries overlap")
+    return split

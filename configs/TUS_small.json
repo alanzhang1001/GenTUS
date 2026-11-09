@@ -1,0 +1,84 @@
+{
+  "dataset": "TUS_small",
+  "split_path": "configs/splits/TUS_small.json",
+  "ground_truth": {
+    "path": "TUS_small/tus/benchmark.pkl",
+    "sha256": "5ef1248b968d610e437d16bc98dc3f55a5d652d7acd02e8eec028af0f174ebe8"
+  },
+  "encoder": {
+    "checkpoint": "models/encoders/tus_small_model.pt",
+    "sha256": "b084ca1ebad5c125a2ac3d65ccb54b8495e4469783fc96f2e8bdabaf32187f95",
+    "config": {
+      "checkpoint_version": 2,
+      "lm": "bert-base-uncased",
+      "attn_heads": 8,
+      "mlp_dim": 256,
+      "max_tokens": 256,
+      "serialization_version": "priority_columns_with_names_v2",
+      "pooling_strategy": "global_query_attention_v2"
+    }
+  },
+  "training": {
+    "epochs": 30,
+    "batch_size": 32,
+    "grad_accum": 2,
+    "dataloader_workers": 8,
+    "lr": 0.0005,
+    "num_quantizers": 4,
+    "codebook_size": 256,
+    "rqvae_epochs": 300,
+    "rqvae_lr": 0.001,
+    "rqvae_batch_size": 256,
+    "rqvae_commitment_weight": 0.05,
+    "rqvae_kmeans_iters": 100,
+    "n_aug": 3,
+    "max_cols": 12,
+    "max_rows": 12,
+    "task_aware_latent_dim": 128,
+    "task_aware_hidden_dims": "512,256",
+    "task_aware_union_loss_weight": 0.1,
+    "task_aware_temperature": 0.1,
+    "task_aware_dropout": 0.0,
+    "add_candidate_candidate_pairs": false,
+    "mask_false_negatives": false,
+    "fn_jaccard_threshold": 0.0,
+    "include_indexing_records": true,
+    "use_ranking_loss": true,
+    "ranking_weight": 0.2,
+    "ranking_margin": 0.2,
+    "max_negatives_per_query": 15,
+    "model": "t5-base",
+    "embed_model": "bert-base-uncased",
+    "seed": 42,
+    "include_column_names": true,
+    "serialization_policy": "priority"
+  },
+  "evaluation": {
+    "k": 60,
+    "beam_size": 200,
+    "num_beam_groups": 10,
+    "diversity_penalty": 0.8,
+    "max_cols": 12,
+    "max_rows": 12,
+    "include_column_names": true,
+    "serialization_policy": "priority",
+    "restrict_gt_to_sid": false
+  },
+  "sources": {
+    "training": {
+      "path": "results/querysplit/TUS_small/train_summary.random.json",
+      "sha256": "6c8951f03b0553aeca79377d8c95de492d138ca95c66a400c625878298f37788"
+    },
+    "evaluation": {
+      "path": "results/querysplit/TUS_small/eval_summary.random.json",
+      "sha256": "cfc9808ea3e60c2bd8e6b1e98c0c185b701deef256c5eb80ca52ec62a5ac2516",
+      "metrics": {
+        "MAP@k": 1.0,
+        "Precision@k": 1.0,
+        "Recall@k": 0.35,
+        "k": 60,
+        "evaluated_queries": 29
+      }
+    }
+  }
+}

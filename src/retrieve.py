@@ -79,6 +79,7 @@ def retrieve(df, model, tokenizer, sid_manager: SemanticIDManager,
              max_cols: int = 0, max_rows: int = 24,
              serializer_token_budget: int = 256,
              include_column_names: bool = False,
+             serialization_policy: str = "column_budget",
              decoding_mode: str = "constrained",
              return_generation_stats: bool = False) -> list[str] | tuple[list[str], dict]:
     """Return ranked list of candidate table names for a query DataFrame."""
@@ -88,6 +89,7 @@ def retrieve(df, model, tokenizer, sid_manager: SemanticIDManager,
         max_rows=max_rows,
         include_column_names=include_column_names,
         token_budget=serializer_token_budget,
+        policy=serialization_policy,
     )
     inputs = tokenizer(text, return_tensors="pt", max_length=512,
                        truncation=True).to(model.device)
