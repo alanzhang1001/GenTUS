@@ -132,21 +132,6 @@ the indexed candidate pool.
 pytest -q
 ```
 
-## Citation
-
-The citation below identifies the earlier arXiv preprint:
-
-```bibtex
-@article{zhang2026gentus,
-  title         = {Generative Retrieval for Table Union Search},
-  author        = {Zhang, Shulun and Wang, Linting and Xu, Yuwei and Zhou, Yingli and Ma, Chenhao},
-  year          = {2026},
-  eprint        = {2607.00833},
-  archivePrefix = {arXiv},
-  primaryClass  = {cs.DB}
-}
-```
-
 ## Structure
 
 ```text
